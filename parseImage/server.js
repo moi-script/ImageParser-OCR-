@@ -1,39 +1,59 @@
 
 import http from 'http';
-import { createReadStream } from 'fs';
+// import { createReadStream } from 'fs';
 import fs from 'fs';
-import { splitImage } from './split.js';
-// let data = [];
+import { splitImageList } from './split.js';
+// import { endpointWrap } from './scribe.js';
+import { saveFileRequest, mapFileRequest } from '../multiparty/mult.js';
+// import chalk from 'chalk';
+// import path from 'path';
+import { routeLoader } from '../routes/process.js';
 
-// img.on('data', ch => {
-//     data.push(ch);
-// })
+const _PORT = 3000;
 
-
-// function getBuf() {
-//     return new Promise((acc) => {
-//         img.on('end', () => {
-//             const bufs = Buffer.concat(data);
-//             acc(bufs);
-//         })
-
-//     })
-// }
-
-
-
-// img.on('error', ch => {
-//     console.error(ch);
-// })
-
-const imgList = ['pCopy1.png', 'pCopy2.png', 'rescpt3.png', 'rescpt4.png', 'rescpt5.png'];
+const routes = routeLoader();
 
 const server = http.createServer((req, res) => {
 
-    //hanlde preflight
+    // endpointList(req, res, '../cut');
+    // const getEndPoint = endpointWrap(path.resolve('../cut'));
 
-    if(req.url === '/upload' && req.method === 'POST') {
-        // process the request;
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    // HANDLE PREFLIGHT
+    if (req.method === "OPTIONS") {
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.setHeader("Access-Control-Max-Age", "600");
+        res.writeHead(204); // No Content
+        return res.end();
+    }
+
+    const handler = routes[req.url];
+
+    if(handler) {
+        console.log('Handler was triggered');
+        return handler(req, res);
+    }
+
+
+    // if(req.url ==='/test' && req.method === 'GET') {
+    //     endpointWrap(req, res, '../cut'); // how to generate multiple listeners for request
+    // }
+
+
+
+
+    if (req.url === '/upload' && req.method === 'POST') {
+
+        // save into local file -> /upload
+        saveFileRequest(req);
+        res.writeHead(200, {
+            'Content-Type' : 'text/plain'
+        })
+        res.end('Done.');
+
     }
 
     if (req.url === '/getImg/pCopy1.png' && req.method === 'GET') {
@@ -62,6 +82,7 @@ const server = http.createServer((req, res) => {
 
         return
     }
+
     else if (req.url === '/getImg/rescpt3.png' && req.method === 'GET') {
         const img = fs.readFileSync('../png/' + imgList[2]);
         console.log('Click', 3);
@@ -90,7 +111,7 @@ const server = http.createServer((req, res) => {
         return
     }
 
-     else if (req.url === '/getImg/rescpt5.png' && req.method === 'GET') {
+    else if (req.url === '/getImg/rescpt5.png' && req.method === 'GET') {
         const img = fs.readFileSync('../png/' + imgList[4]);
         console.log('Click', 5);
 
@@ -107,6 +128,4 @@ const server = http.createServer((req, res) => {
 
 })
 
-
-
-server.listen(3000, () => console.log('Running at port 3000'));
+server.listen(_PORT, () => console.log('Running at port 3000'));
